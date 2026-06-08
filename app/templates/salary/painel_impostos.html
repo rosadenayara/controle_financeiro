@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>📊 Painel de Impostos e Descontos</h2>
+            <p class="text-muted">Entenda o impacto tributário real sobre a sua folha de pagamento.</p>
+        </div>
+        <a href="{{ url_for('salary.goals') }}" class="btn btn-outline-secondary btn-sm">Voltar para Metas</a>
+    </div>
+
+    {% if not cadastrado %}
+    <div class="alert alert-warning shadow-sm" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i> Você ainda não cadastrou seu salário bruto. Vá até as configurações de salário para preenchê-lo.
+    </div>
+    {% else %}
+    <div class="row mt-4">
+        <!-- Card de Alíquota Efetiva -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card text-white bg-danger mb-3 shadow-sm h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <h5 class="card-title">Alíquota Efetiva Real</h5>
+                    <h2 class="card-text my-3">{{ aliquota_efetiva }}%</h2>
+                    <p class="card-text small mb-0">Porcentagem total do seu salário bruto retida em impostos.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card de Total Retido -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card text-white bg-secondary mb-3 shadow-sm h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <h5 class="card-title">Total Retido (Mensal)</h5>
+                    <h2 class="card-text my-3">R$ {{ "%.2f"|format(total_impostos) }}</h2>
+                    <p class="card-text small mb-0">Soma acumulada das deduções de INSS e IRRF.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Detalhamento Técnico -->
+    <div class="card shadow-sm mt-2">
+        <div class="card-header bg-dark text-white font-weight-bold">
+            Demonstrativo de Deduções
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 alignment-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descrição da Rubrica</th>
+                            <th class="text-end">Valor Contábil</th>
+                            <th class="text-end">Impacto Proporcional</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-success text-dark">
+                            <td><strong>🟢 Salário Bruto Inicial</strong></td>
+                            <td class="text-end"><strong>R$ {{ "%.2f"|format(bruto) }}</strong></td>
+                            <td class="text-end">100,00%</td>
+                        </tr>
+                        <tr>
+                            <td>Dedução Contributiva INSS (Previdência)</td>
+                            <td class="text-end text-danger">- R$ {{ "%.2f"|format(inss) }}</td>
+                            <td class="text-end text-danger">{{ "%.2f"|format((inss/bruto)*100) }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Imposto de Renda Retido na Fonte (IRRF)</td>
+                            <td class="text-end text-danger">- R$ {{ "%.2f"|format(irrf) }}</td>
+                            <td class="text-end text-danger">{{ "%.2f"|format((irrf/bruto)*100) }}%</td>
+                        </tr>
+                        <tr class="table-info text-dark table-active">
+                            <td><strong>💰 Salário Líquido Efetivo</strong></td>
+                            <td class="text-end"><strong>R$ {{ "%.2f"|format(liquido) }}</strong></td>
+                            <td class="text-end"><strong>{{ "%.2f"|format((liquido/bruto)*100) }}%</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

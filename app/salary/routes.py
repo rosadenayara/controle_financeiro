@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Salary, Goal
 from app.extensions import db
 from .services import calcular_salario, progresso_meta
+from .services import calcular_inss, calcular_irrf
 
 salary_bp = Blueprint('salary', __name__)
 
@@ -101,9 +102,41 @@ def edit_goal(goal_id):
 def goals():
     goals = Goal.query.filter_by(user_id=current_user.id).all()
     goals_com_progresso = []
+    
     for goal in goals:
         progresso = (goal.valor_atual / goal.valor_objetivo) * 100 if goal.valor_objetivo > 0 else 0
-        goal.progresso = progresso
+        goal.progresso = round(progresso, 1) # Arredonda para 1 casa decimal para o HTML
         goals_com_progresso.append(goal)
-
+        
     return render_template("salary/goals.html", goals=goals_com_progresso)
+
+
+@salary_bp.route('/painel-impostos')
+@login_required
+def painel_impostos():
+    salario_usuario = Salary.query.filter_by(user_id=current_user.id).first()
+    
+    if not salario_usuario:
+        return render_template('salary/painel_impostos.html', cadastrado=False)
+    
+    bruto = salario_usuario.bruto 
+    
+    # Chamando as suas funções do arquivo services.py
+    inss = calcular_inss(bruto)
+    irrf = calcular_irrf(bruto) 
+    liquido = bruto - inss - irrf
+    
+    total_impostos = inss + irrf
+    aliquota_efetiva = (total_impostos / bruto) * 100 if bruto > 0 else 0
+    
+    return render_template(
+        'salary/painel_impostos.html',
+        cadastrado=True,
+        bruto=bruto,
+        inss=inss,
+        irrf=irrf,
+        liquido=liquido,
+        total_impostos=total_impostos,
+        aliquota_efetiva=round(aliquota_efetiva, 2)
+    )
+

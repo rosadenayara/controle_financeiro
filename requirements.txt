@@ -3,3 +3,9 @@ flask_sqlalchemy
 flask_login
 werkzeug
 gunicorn
+psycopg2-binary
+python-dotenv
+yfinance
+requests
+apscheduler
+

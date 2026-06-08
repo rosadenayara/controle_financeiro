@@ -41,13 +41,20 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card text-center">
+                 <div class="card text-center">
                     <div class="card-body">
-                        <h4 class="card-title text-warning">{{ "%.1f"|format((goals|sum(attribute='valor_atual') / goals|sum(attribute='valor_objetivo')) * 100) }}%</h4>
-                        <p class="card-text">Progresso Geral</p>
-                    </div>
-                </div>
-            </div>
+            <h4 class="card-title text-warning">
+                {% set total_objetivo = goals|sum(attribute='valor_objetivo') %}
+                {% if total_objetivo > 0 %}
+                    {{ "%.1f"|format((goals|sum(attribute='valor_atual') / total_objetivo) * 100) }}%
+                {% else %}
+                    0.0%
+                {% endif %}
+            </h4>
+            <p class="card-text">Progresso Geral</p>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 
