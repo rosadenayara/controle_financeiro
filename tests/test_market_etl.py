@@ -1,7 +1,7 @@
 import unittest
 from app import create_app, db
 from app.models import MarketData
-from app.services.market_etl import extrair_selic_bacen, extrair_preco_yfinance, executar_pipeline_etl
+from app.taxes.calculos import extrair_selic_bacen, extrair_preco_yfinance, executar_pipeline_etl
 
 class TestMarketETL(unittest.TestCase):
 

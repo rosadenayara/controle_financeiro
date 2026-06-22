@@ -1,0 +1,43 @@
+nohup: ignorando entrada
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [22/Jun/2026 13:46:14] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:19] "GET /finance/expenses HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:21] "GET /finance/edit-expense/1 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:25] "[32mPOST /finance/edit-expense/1 HTTP/1.1[0m" 302 -
+127.0.0.1 - - [22/Jun/2026 13:46:25] "GET /finance/expenses HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:35] "GET /finance/add-expense HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:52] "[32mPOST /finance/add-expense HTTP/1.1[0m" 302 -
+127.0.0.1 - - [22/Jun/2026 13:46:52] "GET /finance/expenses HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:46:57] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:01] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:06] "GET /add-goal HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:18] "[32mPOST /add-goal HTTP/1.1[0m" 302 -
+127.0.0.1 - - [22/Jun/2026 13:47:18] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:25] "GET /edit-goal/10 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:30] "[32mPOST /edit-goal/10 HTTP/1.1[0m" 302 -
+127.0.0.1 - - [22/Jun/2026 13:47:30] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:44] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:47] "GET /edit-salary HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:47:51] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:49:45] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:49:48] "GET /edit-goal/6 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:49:52] "[32mPOST /edit-goal/6 HTTP/1.1[0m" 302 -
+127.0.0.1 - - [22/Jun/2026 13:49:52] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:51:23] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:51:31] "GET /finance/expenses HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:51:36] "GET /finance/edit-expense/7 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:55:48] "GET /finance/edit-expense/7 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:55:53] "GET /goals HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:55:56] "GET /edit-goal/5 HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:56:03] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:56:06] "GET /edit-salary HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:56:11] "GET /painel-impostos HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:59:28] "GET /painel-impostos HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 13:59:43] "GET /settings HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 14:01:42] "GET /settings HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 14:04:31] "GET /settings HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jun/2026 14:06:05] "GET /settings HTTP/1.1" 200 -

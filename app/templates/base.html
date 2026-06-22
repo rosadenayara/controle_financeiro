@@ -275,7 +275,7 @@
         <h5 class="text-center mb-4">💰 Controle Real</h5>
         <nav class="nav flex-column">
             <a class="nav-link" href="{{ url_for('dashboard.home') }}">
-                <i class="bi bi-house-door me-2"></i>Dashboard
+                <i class="bi bi-house-door me-2"></i>Tela Inicial
             </a>
             <a class="nav-link" href="{{ url_for('salary.salary') }}">
                 <i class="bi bi-cash-stack me-2"></i>Salário
@@ -286,14 +286,17 @@
             <a class="nav-link" href="{{ url_for('salary.goals') }}">
                 <i class="bi bi-trophy me-2"></i>Metas
             </a>
+            <a class="nav-link" href="{{ url_for('salary.painel_impostos') }}">
+                <i class="bi bi-percent me-2"></i>Impostos
+            </a>
             <a class="nav-link" href="{{ url_for('dashboard.reports') }}">
                 <i class="bi bi-graph-up me-2"></i>Relatórios
             </a>
             <a class="nav-link" href="{{ url_for('dashboard.settings') }}">
                 <i class="bi bi-gear me-2"></i>Configurações
             </a>
-            <a class="nav-link" href="{{ url_for('salary.painel_impostos') }}">
-                <i class="bi bi-percent me-2"></i>Impostos
+            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i>Sair da Conta
             </a>
         </nav>
     </div>
@@ -315,6 +318,20 @@
     <header class="page-header">
         {% block page_header %}{% endblock %}
     </header>
+
+    {# Flash messages container #}
+    <div class="container mt-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
     {% block content %}{% endblock %}
 </main>

@@ -66,14 +66,24 @@ def executar_pipeline_etl(app):
         # 1. Coleta e gravação da SELIC
         selic_valor = extrair_selic_bacen()
         if selic_valor is not None:
-            nova_selic = MarketData(ticker="SELIC", tipo="INDICADOR", valor=selic_valor)
+            nova_selic = MarketData(
+                ticker="SELIC",
+                tipo="INDICADOR",
+                valor=selic_valor,
+                data_referencia=datetime.utcnow().date(),
+            )
             db.session.add(nova_selic)
             print(f"✅ SELIC coletada: {selic_valor}%")
 
         # 2. Coleta e gravação de um Ticker de exemplo (Ex: BOVA11)
         bova_valor = extrair_preco_yfinance("BOVA11.SA")
         if bova_valor is not None:
-            novo_ativo = MarketData(ticker="BOVA11.SA", tipo="ACAO", valor=bova_valor)
+            novo_ativo = MarketData(
+                ticker="BOVA11.SA",
+                tipo="ACAO",
+                valor=bova_valor,
+                data_referencia=datetime.utcnow().date(),
+            )
             db.session.add(novo_ativo)
             print(f"✅ BOVA11 coletado: R$ {bova_valor}")
 

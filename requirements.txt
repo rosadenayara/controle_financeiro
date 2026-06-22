@@ -8,4 +8,5 @@ python-dotenv
 yfinance
 requests
 apscheduler
+flask-migrate
 

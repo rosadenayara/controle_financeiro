@@ -61,11 +61,19 @@
                             Digite o valor que você já economizou para esta meta.
                         </div>
                     </div>
-
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle me-2"></i>Atualizar Meta
                         </button>
+
+                        <!-- Form de exclusão separado (inline) -->
+                        <form method="POST" class="m-0">
+                            <input type="hidden" name="delete" value="1">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta meta?');">
+                                <i class="bi bi-trash me-2"></i>Excluir Meta
+                            </button>
+                        </form>
+
                         <a href="{{ url_for('salary.goals') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-2"></i>Voltar
                         </a>

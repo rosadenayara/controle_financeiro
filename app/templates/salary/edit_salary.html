@@ -26,10 +26,18 @@
                         <small class="text-muted">O salário líquido será recalculado automaticamente.</small>
                     </div>
 
-                    <div class="d-grid gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-save me-2"></i>Salvar Alterações
                         </button>
+
+                        <form method="POST" class="m-0">
+                            <input type="hidden" name="delete" value="1">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja remover o salário cadastrado?');">
+                                <i class="bi bi-trash me-2"></i>Excluir
+                            </button>
+                        </form>
+
                         <a href="{{ url_for('salary.salary') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left-circle me-2"></i>Voltar
                         </a>
