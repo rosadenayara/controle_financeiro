@@ -113,7 +113,22 @@
                     <i class="bi bi-pie-chart text-primary me-2"></i>
                     <h6 class="mb-0">Distribuição de Gastos por Categoria</h6>
                 </div>
-                <canvas id="graficoPizza" data-categorias="{{ fatura.gastos_por_categoria.keys() | list | tojson }}" data-valores="{{ fatura.gastos_por_categoria.values() | list | tojson }}"></canvas>
+                {% if fatura.gastos_por_categoria %}
+                <div style="position:relative; height:280px">
+                    <canvas id="graficoPizza"></canvas>
+                </div>
+                <script id="pizza-data" type="application/json">
+                {{ {"categorias": fatura.gastos_por_categoria.keys()|list, "valores": fatura.gastos_por_categoria.values()|list} | tojson }}
+                </script>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-pie-chart fs-1 mb-3 d-block opacity-25"></i>
+                    <p class="mb-1">Nenhuma despesa cadastrada ainda.</p>
+                    <a href="{{ url_for('finance.add_expense') }}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="bi bi-plus-circle me-1"></i>Adicionar despesa
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -178,45 +193,47 @@
 <script>
     // Gráfico de Pizza - Gastos por Categoria
     const graficoPizzaEl = document.getElementById('graficoPizza');
-    if (graficoPizzaEl) {
-        const categorias = JSON.parse(graficoPizzaEl.dataset.categorias || '[]');
-        const valores = JSON.parse(graficoPizzaEl.dataset.valores || '[]');
+    const pizzaDataEl    = document.getElementById('pizza-data');
+    if (graficoPizzaEl && pizzaDataEl) {
+        const pizzaData  = JSON.parse(pizzaDataEl.textContent);
+        const categorias = pizzaData.categorias;
+        const valores    = pizzaData.valores;
 
-        new Chart(graficoPizzaEl, {
-            type: 'doughnut',
-            data: {
-                labels: categorias,
-                datasets: [{
-                    data: valores,
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-                        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return context.label + ': R$ ' + context.parsed.toFixed(2) + ' (' + percentage + '%)';
+        if (categorias.length > 0) {
+            new Chart(graficoPizzaEl, {
+                type: 'doughnut',
+                data: {
+                    labels: categorias,
+                    datasets: [{
+                        data: valores,
+                        backgroundColor: [
+                            '#FF6384','#36A2EB','#FFCE56','#4BC0C0',
+                            '#9966FF','#FF9F40','#C9CBCF','#7BC8A4'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 16, usePointStyle: true }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct   = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return ctx.label + ': R$ ' + ctx.parsed.toFixed(2) + ' (' + pct + '%)';
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Gráfico de Evolução Mensal

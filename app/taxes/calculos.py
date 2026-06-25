@@ -1,10 +1,10 @@
 """
 app/taxes/calculos.py
-Cálculos tributários brasileiros — tabelas 2024
+Cálculos tributários brasileiros — tabelas 2025
 Substitui e expande o services.py original.
 """
 
-# ── TABELAS OFICIAIS 2024 ────────────────────────────────────────────────────
+# ── TABELAS OFICIAIS 2025 ────────────────────────────────────────────────────
 
 FAIXAS_INSS = [
     (1_518.00,  0.075),
@@ -130,6 +130,7 @@ def calcular_simples(receita_anual: float, faturamento_mensal: float) -> dict:
 
 
 def resumo_pj_simples(faturamento_mensal: float, pro_labore: float) -> dict:
+    # RBT12 estimado — o correto seria somar os últimos 12 meses reais
     receita_anual = faturamento_mensal * 12
     simples = calcular_simples(receita_anual, faturamento_mensal)
     inss_pl = calcular_inss(pro_labore)
@@ -151,18 +152,28 @@ def resumo_pj_simples(faturamento_mensal: float, pro_labore: float) -> dict:
     }
 
 
-def resumo_mei(faturamento_mensal: float) -> dict:
-    das = 79.90
-    limite_mensal = 16_666.67
+MEI_DAS = {
+    "comercio":  76.90,
+    "servicos":  80.90,
+    "ambos":     81.90,
+}
+MEI_LIMITE_ANUAL = 144_900.00
+
+
+def resumo_mei(faturamento_mensal: float, tipo_atividade: str = "comercio") -> dict:
+    das = MEI_DAS.get(tipo_atividade, MEI_DAS["comercio"])
+    limite_mensal = MEI_LIMITE_ANUAL / 12
     excede = faturamento_mensal > limite_mensal
     return {
         "regime": "MEI",
         "faturamento": faturamento_mensal,
+        "tipo_atividade": tipo_atividade,
         "das_mensal": das,
         "liquido_estimado": round(faturamento_mensal - das, 2),
-        "limite_mensal": limite_mensal,
+        "limite_mensal": round(limite_mensal, 2),
+        "limite_anual": MEI_LIMITE_ANUAL,
         "excede_limite": excede,
-        "alerta": "Faturamento acima do teto MEI (R$ 200k/ano). Considere migrar para Simples Nacional." if excede else None,
+        "alerta": "Faturamento acima do teto MEI (R$ 144.900/ano). Considere migrar para Simples Nacional." if excede else None,
         "percentual_desconto": round(das / faturamento_mensal * 100, 1) if faturamento_mensal else 0,
     }
 
@@ -189,14 +200,24 @@ def calcular_iof(rendimento: float, dias: int) -> float:
     return round(rendimento * aliq, 2)
 
 
-def calcular_ir_acoes(lucro: float, tipo: str = "swing") -> dict:
+def calcular_ir_acoes(lucro: float, tipo: str = "swing", valor_venda_mensal: float = None) -> dict:
     aliquotas = {"swing": 0.15, "day": 0.20, "fii": 0.20}
     aliq = aliquotas.get(tipo, 0.15)
-    ir = round(lucro * aliq, 2) if lucro > 0 else 0.0
+
+    # PF: isenção para swing trade com vendas totais no mês até R$ 20.000
+    isento = (
+        tipo == "swing"
+        and valor_venda_mensal is not None
+        and valor_venda_mensal <= 20_000.00
+        and lucro > 0
+    )
+
+    ir = 0.0 if (lucro <= 0 or isento) else round(lucro * aliq, 2)
     return {
         "lucro": lucro,
         "tipo": tipo,
         "aliquota": aliq * 100,
+        "isento": isento,
         "ir": ir,
         "lucro_liquido": round(lucro - ir, 2),
     }
@@ -219,67 +240,114 @@ def calcular_ir_dolar(lucro_reais: float) -> dict:
     return {}
 
 
-def comparar_investimentos(valor: float, prazo_dias: int, cdi_anual: float = 0.1065) -> list:
-    """Compara CDB, LCI, Tesouro Selic e Poupança pelo rendimento líquido."""
+def _item_investimento(tipo: str, valor: float, anos: float, prazo_dias: int,
+                        cdi_anual: float, ipca_anual: float, **kw) -> dict:
+    """Calcula rendimento de um único tipo de investimento."""
+
+    def _rf(r_bruto):
+        iof = calcular_iof(r_bruto, prazo_dias)
+        base = r_bruto - iof
+        ir  = calcular_ir_renda_fixa(base, prazo_dias)
+        return r_bruto, iof, ir.get("ir", 0), round(base - ir.get("ir", 0), 2)
+
+    if tipo == "cdb":
+        pct = kw.get("pct_cdi", 1.0)
+        r = valor * ((1 + cdi_anual * pct) ** anos - 1)
+        r, iof, ir, liq = _rf(r)
+        return {"nome": f"CDB {pct*100:.0f}% CDI", "tipo": "Renda Fixa",
+                "rendimento_bruto": round(r,2), "iof": iof, "ir": ir,
+                "rendimento_liquido": liq, "isento_ir": False, "estimativa": False}
+
+    if tipo == "lci":
+        pct = kw.get("pct_cdi", 0.90)
+        r = round(valor * ((1 + cdi_anual * pct) ** anos - 1), 2)
+        return {"nome": f"LCI/LCA {pct*100:.0f}% CDI", "tipo": "Renda Fixa Isenta",
+                "rendimento_bruto": r, "iof": 0, "ir": 0,
+                "rendimento_liquido": r, "isento_ir": True, "estimativa": False}
+
+    if tipo == "tesouro_selic":
+        r = valor * ((1 + cdi_anual) ** anos - 1)
+        r, iof, ir, liq = _rf(r)
+        return {"nome": "Tesouro Selic", "tipo": "Título Público",
+                "rendimento_bruto": round(r,2), "iof": iof, "ir": ir,
+                "rendimento_liquido": liq, "isento_ir": False, "estimativa": False}
+
+    if tipo == "tesouro_ipca":
+        spread = kw.get("spread", 0.06)
+        ipca   = kw.get("ipca_anual", ipca_anual)
+        ret    = (1 + ipca) * (1 + spread) - 1
+        r = valor * ((1 + ret) ** anos - 1)
+        r, iof, ir, liq = _rf(r)
+        return {"nome": f"Tesouro IPCA+ {spread*100:.1f}%", "tipo": "Título Público",
+                "rendimento_bruto": round(r,2), "iof": iof, "ir": ir,
+                "rendimento_liquido": liq, "isento_ir": False, "estimativa": True}
+
+    if tipo == "poupanca":
+        r = round(valor * ((1 + cdi_anual * 0.70) ** anos - 1), 2)
+        return {"nome": "Poupança", "tipo": "Poupança",
+                "rendimento_bruto": r, "iof": 0, "ir": 0,
+                "rendimento_liquido": r, "isento_ir": True, "estimativa": False}
+
+    if tipo == "bolsa":
+        ret = kw.get("retorno_anual", 0.12)
+        r   = round(valor * ((1 + ret) ** anos - 1), 2)
+        ir  = round(r * 0.15, 2) if r > 0 else 0.0
+        return {"nome": "Bolsa (IBOVESPA)", "tipo": "Renda Variável",
+                "rendimento_bruto": r, "iof": 0, "ir": ir,
+                "rendimento_liquido": round(r - ir, 2), "isento_ir": False, "estimativa": True}
+
+    if tipo == "fii":
+        ret = kw.get("retorno_anual", 0.08)
+        r   = round(valor * ((1 + ret) ** anos - 1), 2)
+        # Rendimentos de FII distribuídos são isentos para PF; ganho de capital 20%
+        # Aqui tratamos como rendimento distribuído (isento)
+        return {"nome": "FII (rendimento)", "tipo": "Renda Variável",
+                "rendimento_bruto": r, "iof": 0, "ir": 0,
+                "rendimento_liquido": r, "isento_ir": True, "estimativa": True}
+
+    return None
+
+
+def comparar_investimentos(
+    valor: float,
+    prazo_dias: int,
+    cdi_anual: float = 0.1065,
+    retorno_bolsa_anual: float = None,   # mantido para compatibilidade
+    investimentos: list = None,           # lista flexível: [{tipo, **params}]
+    ipca_anual: float = 0.06,
+) -> list:
+    """Compara investimentos pelo rendimento líquido.
+
+    Modo flexível: passe `investimentos` como lista de dicts com chave `tipo`.
+    Modo legado (sem `investimentos`): retorna conjunto padrão + bolsa opcional.
+    """
     anos = prazo_dias / 365
+    kw_base = dict(valor=valor, anos=anos, prazo_dias=prazo_dias, cdi_anual=cdi_anual)
 
-    def bruto(pct_cdi):
-        return valor * ((1 + cdi_anual * pct_cdi) ** anos - 1)
+    if investimentos is not None:
+        resultados = []
+        for inv in [dict(i) for i in investimentos]:
+            tipo = inv.pop("tipo")
+            # ipca_anual do item tem prioridade sobre o parâmetro base
+            item_ipca = inv.pop("ipca_anual", ipca_anual)
+            resultados.append(
+                _item_investimento(tipo, ipca_anual=item_ipca, **kw_base, **inv)
+            )
+    else:
+        # Conjunto padrão (legado)
+        resultados = [
+            _item_investimento("cdb",           ipca_anual=ipca_anual, **kw_base, pct_cdi=1.0),
+            _item_investimento("lci",           ipca_anual=ipca_anual, **kw_base, pct_cdi=0.90),
+            _item_investimento("tesouro_selic", ipca_anual=ipca_anual, **kw_base),
+            _item_investimento("poupanca",      ipca_anual=ipca_anual, **kw_base),
+        ]
+        if retorno_bolsa_anual is not None:
+            resultados.append(
+                _item_investimento("bolsa", ipca_anual=ipca_anual, **kw_base,
+                                   retorno_anual=retorno_bolsa_anual)
+            )
 
-    resultados = []
-
-    # CDB 100% CDI
-    r = bruto(1.0)
-    iof = calcular_iof(r, prazo_dias)
-    r_pos_iof = r - iof
-    ir = calcular_ir_renda_fixa(r_pos_iof, prazo_dias)
-    resultados.append({
-        "nome": "CDB 100% CDI",
-        "tipo": "Renda Fixa",
-        "rendimento_bruto": round(r, 2),
-        "iof": iof,
-        "ir": ir.get("ir", 0),
-        "rendimento_liquido": round(r_pos_iof - ir.get("ir", 0), 2),
-        "isento_ir": False,
-    })
-
-    # LCI/LCA 90% CDI (isenta IR e IOF)
-    r = bruto(0.90)
-    resultados.append({
-        "nome": "LCI/LCA 90% CDI",
-        "tipo": "Renda Fixa Isenta",
-        "rendimento_bruto": round(r, 2),
-        "iof": 0,
-        "ir": 0,
-        "rendimento_liquido": round(r, 2),
-        "isento_ir": True,
-    })
-
-    # Tesouro Selic
-    r = bruto(1.0)
-    ir = calcular_ir_renda_fixa(r, prazo_dias)
-    resultados.append({
-        "nome": "Tesouro Selic",
-        "tipo": "Título Público",
-        "rendimento_bruto": round(r, 2),
-        "iof": 0,
-        "ir": ir.get("ir", 0),
-        "rendimento_liquido": round(r - ir.get("ir", 0), 2),
-        "isento_ir": False,
-    })
-
-    # Poupança ~70% Selic (isenta)
-    r = bruto(0.70)
-    resultados.append({
-        "nome": "Poupança",
-        "tipo": "Poupança",
-        "rendimento_bruto": round(r, 2),
-        "iof": 0,
-        "ir": 0,
-        "rendimento_liquido": round(r, 2),
-        "isento_ir": True,
-    })
-
+    resultados = [r for r in resultados if r is not None]
     resultados.sort(key=lambda x: x["rendimento_liquido"], reverse=True)
     return resultados
 
@@ -319,6 +387,66 @@ def previsao_com_rendimento(saldo_mensal: float, meses: int = 6, cdi_anual: floa
             "ganho_extra": round(acumulado - saldo_mensal * i, 2),
         })
     return previsao
+
+
+def simular_aportes(aporte_mensal: float, cdi_anual: float = 0.1065,
+                    ipca_anual: float = 0.0600) -> list:
+    """
+    Projeção de patrimônio com aportes mensais em diferentes investimentos.
+    Retorna lista de dicts com rendimento líquido para 1, 2, 5 e 10 anos.
+    """
+    prazos_anos = [1, 2, 5, 10]
+
+    def fv(taxa_anual: float, anos: int) -> float:
+        taxa_m = (1 + taxa_anual) ** (1 / 12) - 1
+        n = anos * 12
+        if taxa_m < 1e-10:
+            return aporte_mensal * n
+        return aporte_mensal * ((1 + taxa_m) ** n - 1) / taxa_m
+
+    def aliq_ir(anos: int) -> float:
+        dias = anos * 365
+        if dias <= 180:  return 0.225
+        if dias <= 360:  return 0.200
+        if dias <= 720:  return 0.175
+        return 0.150
+
+    opcoes = [
+        {"tipo": "CDB 100% CDI",          "taxa": cdi_anual,                          "isento": False},
+        {"tipo": "LCI/LCA 92% CDI",       "taxa": cdi_anual * 0.92,                   "isento": True},
+        {"tipo": "Tesouro Selic",          "taxa": cdi_anual,                          "isento": False},
+        {"tipo": "Tesouro IPCA+ 6% a.a.", "taxa": (1 + ipca_anual) * (1.06) - 1,     "isento": False},
+        {"tipo": "Poupança",              "taxa": min(cdi_anual * 0.70, 0.0617),      "isento": True},
+        {"tipo": "Bolsa (12% a.a. est.)", "taxa": 0.12, "isento": False, "ir_fixo": 0.15},
+        {"tipo": "FII (8% a.a. est.)",    "taxa": 0.08,                               "isento": True},
+    ]
+
+    resultado = []
+    for op in opcoes:
+        prazos = []
+        for anos in prazos_anos:
+            total = aporte_mensal * 12 * anos
+            bruto = fv(op["taxa"], anos)
+            rendimento = max(0.0, bruto - total)
+
+            if op.get("isento"):
+                ir = 0.0
+            elif "ir_fixo" in op:
+                ir = rendimento * op["ir_fixo"]
+            else:
+                ir = rendimento * aliq_ir(anos)
+
+            liquido = bruto - ir
+            prazos.append({
+                "anos":          anos,
+                "aportado":      round(total, 2),
+                "bruto":         round(bruto, 2),
+                "ir":            round(ir, 2),
+                "liquido":       round(liquido, 2),
+                "ganho_liquido": round(liquido - total, 2),
+            })
+        resultado.append({"tipo": op["tipo"], "isento": op.get("isento", False), "prazos": prazos})
+    return resultado
 
 
 # --- FUNÇÕES ADICIONAIS DE COMPATIBILIDADE ---------------------------------

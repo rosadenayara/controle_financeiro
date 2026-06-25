@@ -15,55 +15,16 @@
             justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .auth-container {
-            width: 100%;
-            max-width: 500px;
-        }
+        .auth-container { width: 100%; max-width: 500px; }
         .auth-card {
             background: white;
             border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         }
         .auth-card-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            align-items: center;
-            padding: 2rem 2rem;
+            padding: 2rem;
         }
-        .auth-section {
-            padding: 1rem;
-        }
-        .auth-left {
-            background: transparent;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .money-bag-icon {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 0.01rem;
-        }
-        .auth-right {
-            padding: 1rem;
-        }
-        .auth-left h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.005rem;
-            color: #333;
-        }
-        .auth-left p {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 0;
-            color: #666;
-        }
+        .money-bag-icon { font-size: 2rem; color: #667eea; }
         .form-control {
             border-radius: 10px;
             border: 2px solid #e0e0e0;
@@ -73,26 +34,24 @@
         }
         .form-control:focus {
             border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
         }
-        .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
+        .form-control.campo-erro-amarelo { border-color: #f0a500 !important; }
+        .form-control.campo-erro-vermelho { border-color: #dc3545 !important; }
+        .form-label { font-weight: 600; color: #333; }
         .btn-login {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 25px;
             padding: 0.75rem 1.5rem;
             font-weight: 600;
-            transition: all 0.3s ease;
             width: 100%;
             font-size: 1rem;
+            transition: all 0.3s ease;
         }
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
         }
         .auth-footer {
             text-align: center;
@@ -100,111 +59,174 @@
             padding-top: 1rem;
             border-top: 1px solid #e0e0e0;
         }
-        .auth-footer p {
-            margin: 0 0 1rem 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .auth-footer a {
+        .auth-footer p { margin: 0 0 0.75rem 0; color: #666; font-size: 0.9rem; }
+        .auth-footer .link-cadastro {
             color: #667eea;
             font-weight: 600;
             text-decoration: none;
-            transition: color 0.3s ease;
         }
-        .auth-footer a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+        .auth-footer .link-cadastro:hover { color: #764ba2; text-decoration: underline; }
+        .btn-cadastro-normal {
+            display: block;
+            width: 100%;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            background: transparent;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
-        .auth-title {
-            text-align: center;
-            margin-bottom: 1.5rem;
+        .btn-cadastro-normal:hover {
+            background: #667eea;
+            color: white;
         }
-        .auth-title h2 {
-            font-size: 1.8rem;
+        .btn-cadastro-destaque {
+            display: block;
+            width: 100%;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
             font-weight: 700;
             color: #333;
-            margin-bottom: 0.5rem;
+            background: #ffc107;
+            border: 2px solid #ffc107;
+            text-decoration: none;
+            text-align: center;
+            animation: pulso 1.2s ease-in-out 3;
         }
-        .auth-title p {
-            color: #999;
+        .btn-cadastro-destaque:hover { background: #e6a800; border-color: #e6a800; color: #333; }
+        @keyframes pulso {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,193,7,0.6); }
+            50%      { box-shadow: 0 0 0 10px rgba(255,193,7,0); }
+        }
+        .alerta-box {
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
             font-size: 0.95rem;
         }
-        @media (max-width: 768px) {
-            .auth-card-row {
-                grid-template-columns: 1fr;
-                min-height: auto;
-            }
-            .auth-left {
-                padding: 0;
-                min-height: auto;
-            }
-            .auth-right {
-                padding: 0;
-            }
+        .alerta-aviso {
+            background: #fff8e1;
+            border: 1.5px solid #f0a500;
+            color: #7a5200;
+        }
+        .alerta-erro {
+            background: #fff0f0;
+            border: 1.5px solid #dc3545;
+            color: #7a0000;
         }
     </style>
 </head>
 <body>
-    <div class="container auth-container">
-        <div class="auth-card">
-            <div class="auth-card-row">
-                <div class="auth-section auth-left">
-                    <div class="money-bag-icon">
-                        <i class="bi bi-cash-bag"></i>
+<div class="container auth-container">
+    <div class="auth-card">
+        <div class="auth-card-row">
+
+            <!-- Cabeçalho -->
+            <div class="text-center mb-4">
+                <div class="money-bag-icon mb-1"><i class="bi bi-cash-bag"></i></div>
+                <h4 class="fw-bold mb-0" style="color:#333">Bem-vindo ao Controle Real</h4>
+                <p class="text-muted small mb-0">Gerencie suas finanças de forma inteligente</p>
+            </div>
+
+            <!-- Flash messages vindas de outras páginas (ex: cadastro realizado) -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alerta-box {{ 'alerta-aviso' if category != 'success' and category != 'danger' else ('alerta-erro' if category == 'danger' else '') }}"
+                         style="{% if category == 'success' %}background:#f0fff4;border:1.5px solid #28a745;color:#155724{% endif %}">
+                        <i class="bi bi-info-circle-fill mt-1"></i>
+                        <span>{{ message }}</span>
                     </div>
-                    <h3><i class="bi bi-cash-coin me-2"></i>Bem-vindo ao Controle Real</h3>
-                    <p>Gerencie suas finanças de forma inteligente</p>
-                </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-                <div class="auth-section auth-right">
-                    <div class="auth-title">
-                        <p style="margin-bottom: 0.005rem; font-size: 1rem;">Faça login na sua conta</p>
-                    </div>
-
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">
-                                <i class="bi bi-envelope me-2"></i>Email
-                            </label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="seu@email.com" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">
-                                <i class="bi bi-key me-2"></i>Senha
-                            </label>
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Digite sua senha" required>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-login">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
-                            </button>
-                        </div>
-                    </form>
-
-                    <div class="auth-footer">
-                        <p class="mb-3">Não tem uma conta? <a href="{{ url_for('auth.register') }}">Criar Conta</a></p>
-                        <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary w-100" style="border-radius: 25px; padding: 0.75rem 1.5rem; font-size: 1rem;">
-                            <i class="bi bi-person-plus me-2"></i>Registrar-se
-                        </a>
-                    </div>
+            <!-- Alerta: conta não encontrada -->
+            {% if erro == 'not_found' %}
+            <div class="alerta-box alerta-aviso">
+                <i class="bi bi-person-x-fill mt-1 fs-5"></i>
+                <div>
+                    <strong>Conta não cadastrada.</strong><br>
+                    Nenhuma conta foi encontrada com o e-mail
+                    <strong>{{ email_digitado }}</strong>.
+                    Crie sua conta gratuitamente abaixo.
                 </div>
             </div>
+            {% endif %}
+
+            <!-- Alerta: senha incorreta -->
+            {% if erro == 'wrong_password' %}
+            <div class="alerta-box alerta-erro">
+                <i class="bi bi-lock-fill mt-1 fs-5"></i>
+                <div>
+                    <strong>Senha incorreta.</strong><br>
+                    Verifique sua senha e tente novamente.
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulário -->
+            <p class="text-center text-muted mb-3" style="font-size:1rem">Faça login na sua conta</p>
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="bi bi-envelope me-1"></i>E-mail
+                    </label>
+                    <input type="email" id="email" name="email"
+                           class="form-control {% if erro == 'not_found' %}campo-erro-amarelo{% elif erro == 'wrong_password' %}campo-erro-vermelho{% endif %}"
+                           placeholder="seu@email.com"
+                           value="{{ email_digitado }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="bi bi-key me-1"></i>Senha
+                    </label>
+                    <input type="password" id="password" name="password"
+                           class="form-control {% if erro == 'wrong_password' %}campo-erro-vermelho{% endif %}"
+                           placeholder="Digite sua senha" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-login">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                    </button>
+                </div>
+            </form>
+
+            <!-- Rodapé / cadastro -->
+            <div class="auth-footer" id="cadastro-section">
+                {% if erro == 'not_found' %}
+                <p class="mb-2 fw-semibold" style="color:#7a5200">
+                    <i class="bi bi-arrow-down me-1"></i>Crie sua conta agora:
+                </p>
+                <a href="{{ url_for('auth.register') }}" class="btn-cadastro-destaque">
+                    <i class="bi bi-person-plus me-2"></i>Criar minha conta gratuitamente
+                </a>
+                {% else %}
+                <p class="mb-2">Não tem uma conta?
+                    <a href="{{ url_for('auth.register') }}" class="link-cadastro">Criar Conta</a>
+                </p>
+                <a href="{{ url_for('auth.register') }}" class="btn-cadastro-normal">
+                    <i class="bi bi-person-plus me-2"></i>Registrar-se
+                </a>
+                {% endif %}
+            </div>
+
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% if erro == 'not_found' %}
+<script>
+  document.getElementById('cadastro-section').scrollIntoView({behavior:'smooth'});
+</script>
+{% endif %}
 </body>
 </html>

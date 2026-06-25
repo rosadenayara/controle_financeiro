@@ -6,7 +6,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object("config.Config")
 
-    # Extensões
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -21,26 +20,28 @@ def create_app():
     from app.salary.routes import salary_bp
     from app.finance.routes import finance_bp
     from app.dashboard.routes import dashboard_bp
+    from app.taxes.routes import taxes_bp
+    from app.investimentos.routes import inv_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(salary_bp)
     app.register_blueprint(finance_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(taxes_bp)
+    app.register_blueprint(inv_bp)
 
-    # Job agendado — ETL de mercado (apenas fora de testes)
     _start_scheduler(app)
-
     return app
 
 
 def _start_scheduler(app):
-    """Inicia o APScheduler apenas uma vez, evitando duplicação em reload do dev server."""
+    """Sobe o APScheduler apenas no processo principal do Werkzeug."""
     import os
-    # Em desenvolvimento o Werkzeug sobe dois processos; o reloader não deve subir o scheduler
-    if app.testing or app.debug:
-        # Não inicia o scheduler durante testes ou no modo debug/development
+    if app.testing:
         return
-
+    # Em debug o Werkzeug sobe dois processos; só inicializa no processo filho
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from app.services.market_etl import executar_pipeline_etl
@@ -55,9 +56,6 @@ def _start_scheduler(app):
             replace_existing=True,
         )
         scheduler.start()
+        app.logger.info("✅ Scheduler iniciado.")
     except Exception as e:
-        # Se o APScheduler não estiver instalado ou ocorrer erro, apenas loga e segue
-        try:
-            app.logger.warning(f"Scheduler não iniciado: {e}")
-        except Exception:
-            print("Scheduler não iniciado:", e)
+        app.logger.warning(f"Scheduler não iniciado: {e}")

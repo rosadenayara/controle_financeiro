@@ -13,79 +13,211 @@
 
 {% block content %}
 <div class="row g-4">
-    <!-- Calculadora de Salário -->
+
+    <!-- Coluna principal -->
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
+
+        <!-- Card: salário cadastrado -->
+        {% if salario_atual %}
+        {% set reg = salario_atual.regime | lower %}
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">Seu salário cadastrado</h5>
+                        <span class="badge
+                            {% if reg == 'clt' %}bg-primary
+                            {% elif reg == 'pj' %}bg-info text-dark
+                            {% else %}bg-warning text-dark{% endif %} me-1">
+                            {{ salario_atual.regime }}
+                        </span>
+                        {% if reg == 'mei' and salario_atual.tipo_atividade %}
+                        <span class="badge bg-secondary">{{ salario_atual.tipo_atividade | capitalize }}</span>
+                        {% endif %}
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" id="btn-editar"
+                            onclick="mostrarForm()">
+                        <i class="bi bi-pencil-square me-1"></i>Editar / Recalcular
+                    </button>
+                </div>
+
+                <div class="row g-3 text-center">
+                    {% if reg == 'clt' %}
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">Salário Bruto</div>
+                            <div class="fw-bold">R$ {{ "%.2f"|format(salario_atual.bruto) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">INSS</div>
+                            <div class="fw-bold text-danger">-R$ {{ "%.2f"|format(salario_atual.inss or 0) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">IRPF</div>
+                            <div class="fw-bold text-danger">-R$ {{ "%.2f"|format(salario_atual.irrf or 0) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-success bg-opacity-10 p-3">
+                            <div class="small text-muted">Líquido</div>
+                            <div class="fw-bold text-success fs-5">R$ {{ "%.2f"|format(salario_atual.liquido) }}</div>
+                        </div>
+                    </div>
+                    {% if salario_atual.fgts %}
+                    <div class="col-12 text-start">
+                        <small class="text-muted">FGTS depositado pelo empregador: R$ {{ "%.2f"|format(salario_atual.fgts) }}</small>
+                    </div>
+                    {% endif %}
+
+                    {% elif reg == 'pj' %}
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">Faturamento</div>
+                            <div class="fw-bold">R$ {{ "%.2f"|format(salario_atual.bruto) }}</div>
+                        </div>
+                    </div>
+                    {% if salario_atual.pro_labore %}
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">Pró-Labore</div>
+                            <div class="fw-bold">R$ {{ "%.2f"|format(salario_atual.pro_labore) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">INSS + IRPF PL</div>
+                            <div class="fw-bold text-danger">-R$ {{ "%.2f"|format((salario_atual.inss or 0) + (salario_atual.irrf or 0)) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-success bg-opacity-10 p-3">
+                            <div class="small text-muted">Líquido Est.</div>
+                            <div class="fw-bold text-success fs-5">R$ {{ "%.2f"|format(salario_atual.liquido) }}</div>
+                        </div>
+                    </div>
+
+                    {% else %}{# MEI #}
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">Faturamento</div>
+                            <div class="fw-bold">R$ {{ "%.2f"|format(salario_atual.bruto) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light p-3">
+                            <div class="small text-muted">DAS Mensal</div>
+                            <div class="fw-bold text-danger">incluso</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-success bg-opacity-10 p-3">
+                            <div class="small text-muted">Líquido Est.</div>
+                            <div class="fw-bold text-success fs-5">R$ {{ "%.2f"|format(salario_atual.liquido) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Formulário de cálculo/edição -->
+        <div class="card" id="form-card"
+             {% if salario_atual %}style="display:none"{% endif %}>
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-calculator me-2"></i>Calculadora de Salário Líquido
+                    <i class="bi bi-calculator me-2"></i>
+                    {{ "Editar Salário" if salario_atual else "Calcular Salário Líquido" }}
                 </h5>
+                {% if salario_atual %}
+                <button type="button" class="btn-close" onclick="esconderForm()"></button>
+                {% endif %}
             </div>
             <div class="card-body">
-                <form method="POST" class="mb-4">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <label for="bruto" class="form-label">Salário Bruto (R$)</label>
-                            <input type="number" step="0.01" class="form-control form-control-lg" id="bruto" name="bruto" value="{{ salario_atual.bruto if salario_atual else '' }}" placeholder="5000.00" required>
+                <form method="POST">
+                    <input type="hidden" name="regime" id="regime-input" value="{{ regime_atual }}">
+
+                    <!-- Seletor de regime -->
+                    <p class="form-label fw-semibold mb-2">Qual é o seu regime de trabalho?</p>
+                    <div class="btn-group mb-4" role="group">
+                        <button type="button" class="btn regime-btn
+                            {% if regime_atual == 'clt' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            data-regime="clt">PF / CLT</button>
+                        <button type="button" class="btn regime-btn
+                            {% if regime_atual == 'pj' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            data-regime="pj">PJ Simples</button>
+                        <button type="button" class="btn regime-btn
+                            {% if regime_atual == 'mei' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            data-regime="mei">MEI</button>
+                    </div>
+
+                    <!-- CLT -->
+                    <div id="fields-clt" class="regime-fields {% if regime_atual != 'clt' %}d-none{% endif %} mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Salário Bruto (R$)</label>
+                                <input type="number" step="0.01" class="form-control form-control-lg"
+                                       name="bruto" placeholder="Ex: 5000.00"
+                                       value="{{ salario_atual.bruto if salario_atual and regime_atual == 'clt' else '' }}">
+                            </div>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">
-                                <i class="bi bi-calculator me-2"></i>Calcular
-                            </button>
+                    </div>
+
+                    <!-- PJ -->
+                    <div id="fields-pj" class="regime-fields {% if regime_atual != 'pj' %}d-none{% endif %} mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Faturamento Mensal (R$)</label>
+                                <input type="number" step="0.01" class="form-control form-control-lg"
+                                       name="faturamento_pj" placeholder="Ex: 15000.00"
+                                       value="{{ salario_atual.bruto if salario_atual and regime_atual == 'pj' else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Pró-Labore (R$)</label>
+                                <input type="number" step="0.01" class="form-control form-control-lg"
+                                       name="pro_labore" placeholder="Ex: 3000.00"
+                                       value="{{ salario_atual.pro_labore if salario_atual and salario_atual.pro_labore else 0 }}">
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- MEI -->
+                    <div id="fields-mei" class="regime-fields {% if regime_atual != 'mei' %}d-none{% endif %} mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Faturamento Mensal (R$)</label>
+                                <input type="number" step="0.01" class="form-control form-control-lg"
+                                       name="faturamento_mei" placeholder="Ex: 8000.00"
+                                       value="{{ salario_atual.bruto if salario_atual and regime_atual == 'mei' else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Atividade</label>
+                                <select name="tipo_atividade" class="form-select form-select-lg">
+                                    {% set ta = salario_atual.tipo_atividade if salario_atual else '' %}
+                                    <option value="comercio" {% if ta == 'comercio' %}selected{% endif %}>Comércio / Indústria — DAS R$ 76,90</option>
+                                    <option value="servicos" {% if ta == 'servicos' %}selected{% endif %}>Serviços — DAS R$ 80,90</option>
+                                    <option value="ambos"    {% if ta == 'ambos'    %}selected{% endif %}>Comércio + Serviços — DAS R$ 81,90</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-calculator me-2"></i>Calcular e Salvar
+                        </button>
+                        {% if salario_atual %}
+                        <button type="button" class="btn btn-outline-secondary btn-lg"
+                                onclick="esconderForm()">Cancelar</button>
+                        {% endif %}
                     </div>
                 </form>
 
-                {% if salario_atual %}
-                <div class="card mb-4 border-primary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h5 class="card-title mb-1">Salário Atual</h5>
-                                <p class="mb-0 text-muted">Valores salvos no sistema</p>
-                            </div>
-                            <a href="{{ url_for('salary.edit_salary') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-pencil-square me-1"></i>Editar Salário
-                            </a>
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <small class="text-muted">Salário Bruto</small>
-                                <p class="h5 mb-0">R$ {{ "%.2f"|format(salario_atual.bruto) }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">Salário Líquido</small>
-                                <p class="h5 mb-0 text-success">R$ {{ "%.2f"|format(salario_atual.liquido) }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if resultado %}
-                <div class="alert alert-success">
-                    <h6 class="alert-heading mb-2">Resultado do Cálculo</h6>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <small class="text-muted">Salário Bruto</small>
-                            <h5 class="mb-0 text-primary">R$ {{ "%.2f"|format(resultado.bruto) }}</h5>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-muted">INSS</small>
-                            <h5 class="mb-0 text-danger">-R$ {{ "%.2f"|format(resultado.inss) }}</h5>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-muted">IRRF</small>
-                            <h5 class="mb-0 text-danger">-R$ {{ "%.2f"|format(resultado.irpf) }}</h5>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="h6 mb-0">Salário Líquido</span>
-                        <span class="h4 mb-0 text-success fw-bold">R$ {{ "%.2f"|format(resultado.liquido) }}</span>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -113,12 +245,12 @@
                         <i class="bi bi-trophy me-2"></i>Ver Metas
                     </a>
                     {% if salario_atual %}
-                    <a href="{{ url_for('salary.edit_salary') }}" class="btn btn-outline-secondary">
+                    <button onclick="mostrarForm()" class="btn btn-outline-secondary">
                         <i class="bi bi-pencil-square me-2"></i>Editar Salário
-                    </a>
+                    </button>
                     {% endif %}
                     <a href="{{ url_for('dashboard.home') }}" class="btn btn-primary">
-                        <i class="bi bi-house-door me-2"></i>Ir ao Dashboard
+                        <i class="bi bi-house-door me-2"></i>Ir à Tela Inicial
                     </a>
                 </div>
             </div>
@@ -154,4 +286,30 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarForm() {
+    document.getElementById("form-card").style.display = "";
+    document.getElementById("form-card").scrollIntoView({behavior: "smooth"});
+}
+function esconderForm() {
+    document.getElementById("form-card").style.display = "none";
+    window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+document.querySelectorAll(".regime-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".regime-btn").forEach(b => {
+            b.classList.replace("btn-primary", "btn-outline-primary");
+        });
+        btn.classList.replace("btn-outline-primary", "btn-primary");
+        const regime = btn.dataset.regime;
+        document.getElementById("regime-input").value = regime;
+        document.querySelectorAll(".regime-fields").forEach(f => f.classList.add("d-none"));
+        document.getElementById("fields-" + regime).classList.remove("d-none");
+    });
+});
+</script>
 {% endblock %}

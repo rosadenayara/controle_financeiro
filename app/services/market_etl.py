@@ -1,92 +1,136 @@
+"""
+app/services/market_etl.py
+Pipeline ETL de dados de mercado — BACEN SGS + yfinance → PostgreSQL
+"""
+import logging
+from datetime import datetime
+
 import requests
 import yfinance as yf
-from app import db
-from app.models import MarketData
-from datetime import datetime, timedelta
 
-def extrair_selic_bacen():
-    """Busca a taxa Selic mais recente direto da API filtrada por data"""
+logger = logging.getLogger(__name__)
+
+# ── Indicadores do BACEN (API SGS) ───────────────────────────────────────────
+# código SGS → (ticker interno, tipo, nome legível)
+INDICADORES_BACEN = {
+    11:  ("SELIC", "INDICADOR", "Taxa Selic (% a.a.)"),
+    12:  ("CDI",   "INDICADOR", "CDI (% a.a.)"),
+    433: ("IPCA",  "INDICADOR", "IPCA - Variação Mensal (%)"),
+}
+
+# ── Ativos coletados via yfinance ─────────────────────────────────────────────
+ATIVOS_YFINANCE = [
+    ("BOVA11.SA", "FUNDO",  "ETF IBOVESPA"),
+    ("PETR4.SA",  "ACAO",   "Petrobras PN"),
+    ("VALE3.SA",  "ACAO",   "Vale"),
+    ("ITUB4.SA",  "ACAO",   "Itaú Unibanco PN"),
+    ("IVVB11.SA", "FUNDO",  "ETF S&P 500 (BRL)"),
+    ("BRL=X",     "CAMBIO", "Dólar / Real"),
+]
+
+_BACEN_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/1?formato=json"
+
+
+# ── Extração ──────────────────────────────────────────────────────────────────
+
+def _extrair_indicador_bacen(codigo: int):
+    """Chama a API SGS do BACEN. Retorna (valor, data_ref) ou (None, None)."""
+    url = _BACEN_SGS.format(codigo=codigo)
     try:
-        # Tenta usar o endpoint mais recente da API do BACEN
-        # Series 432 = SELIC acumulada no mês, 11 = SELIC efetiva diária
-        endpoints = [
-            "https://www.bcb.gov.br/api/valores/seriesTempo/11/dados",
-            "https://www.bcb.gov.br/api/valores/seriesTempo/432/dados",
-        ]
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept": "application/json"
-        }
-        
-        for url in endpoints:
-            try:
-                response = requests.get(url, headers=headers, timeout=10, verify=False)
-                
-                if response.status_code == 200:
-                    dados = response.json()
-                    # Verifica se a resposta tem o formato esperado
-                    if isinstance(dados, dict) and "valor" in dados:
-                        valor_formatado = str(dados["valor"]).replace(',', '.')
-                        return float(valor_formatado)
-                    elif isinstance(dados, list) and len(dados) > 0:
-                        ultimo_registro = dados[-1]
-                        if isinstance(ultimo_registro, dict) and "valor" in ultimo_registro:
-                            valor_formatado = str(ultimo_registro['valor']).replace(',', '.')
-                            return float(valor_formatado)
-            except requests.exceptions.RequestException:
-                continue
-        
-        print("❌ [BACEN] Não foi possível conectar à API do BACEN. Retornando valor padrão.")
-        # Retorna um valor padrão realista se a API não responder
-        return 10.5  # Taxa Selic aproximada como fallback
-            
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        dados = resp.json()
+        if dados:
+            ultimo = dados[-1]
+            valor = float(str(ultimo["valor"]).replace(",", "."))
+            data_ref = datetime.strptime(ultimo["data"], "%d/%m/%Y").date()
+            return valor, data_ref
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO NO PIPELINE: {e}\n")
-        
-    return None
+        logger.warning("BACEN série %s: %s", codigo, e)
+    return None, None
 
 
-def extrair_preco_yfinance(ticker: str):
-    """Busca a cotação de fechamento mais recente de um ativo no Yahoo Finance"""
+def _extrair_ativo_yfinance(ticker: str):
+    """Busca cotação do yfinance. Retorna (preco, variacao_pct, data_ref) ou (None, None, None)."""
     try:
-        ticker_data = yf.Ticker(ticker)
-        historico = ticker_data.history(period="1d")
-        if not historico.empty:
-            return float(historico['Close'].iloc[-1])
+        hist = yf.Ticker(ticker).history(period="5d")
+        if hist.empty:
+            return None, None, None
+        preco = float(hist["Close"].iloc[-1])
+        variacao = None
+        if len(hist) >= 2:
+            anterior = float(hist["Close"].iloc[-2])
+            if anterior:
+                variacao = round((preco - anterior) / anterior * 100, 4)
+        data_ref = hist.index[-1].date()
+        return preco, variacao, data_ref
     except Exception as e:
-        print(f"Erro ao extrair {ticker} do yfinance: {e}")
-    return None
+        logger.warning("yfinance %s: %s", ticker, e)
+    return None, None, None
+
+
+# ── Carga (upsert) ────────────────────────────────────────────────────────────
+
+def _upsert(ticker, tipo, nome, valor, data_ref, variacao=None):
+    """Insere ou atualiza o registro (ticker + data_ref) no banco."""
+    from app.extensions import db
+    from app.models import MarketData
+
+    registro = MarketData.query.filter_by(ticker=ticker, data_referencia=data_ref).first()
+    if registro:
+        registro.valor = valor
+        registro.variacao_dia = variacao
+        registro.atualizado_em = datetime.utcnow()
+    else:
+        db.session.add(MarketData(
+            ticker=ticker,
+            tipo=tipo,
+            nome=nome,
+            valor=valor,
+            variacao_dia=variacao,
+            data_referencia=data_ref,
+        ))
+
+
+# ── Job principal ─────────────────────────────────────────────────────────────
 
 def executar_pipeline_etl(app):
-    """Executa o fluxo completo: Extração -> Transformação -> Carga no banco"""
+    """Coleta todos os indicadores e ativos e persiste no banco (com upsert)."""
     with app.app_context():
-        print("🚀 Iniciando Pipeline ETL de mercado...")
-        
-        # 1. Coleta e gravação da SELIC
-        selic_valor = extrair_selic_bacen()
-        if selic_valor is not None:
-            nova_selic = MarketData(
-                ticker="SELIC",
-                tipo="INDICADOR",
-                valor=selic_valor,
-                data_referencia=datetime.utcnow().date(),
-            )
-            db.session.add(nova_selic)
-            print(f"✅ SELIC coletada: {selic_valor}%")
+        from app.extensions import db
+        logger.info("▶ Pipeline ETL iniciado")
+        erros = []
 
-        # 2. Coleta e gravação de um Ticker de exemplo (Ex: BOVA11)
-        bova_valor = extrair_preco_yfinance("BOVA11.SA")
-        if bova_valor is not None:
-            novo_ativo = MarketData(
-                ticker="BOVA11.SA",
-                tipo="ACAO",
-                valor=bova_valor,
-                data_referencia=datetime.utcnow().date(),
-            )
-            db.session.add(novo_ativo)
-            print(f"✅ BOVA11 coletado: R$ {bova_valor}")
+        for codigo, (ticker, tipo, nome) in INDICADORES_BACEN.items():
+            valor, data_ref = _extrair_indicador_bacen(codigo)
+            if valor is not None:
+                _upsert(ticker, tipo, nome, valor, data_ref)
+                logger.info("✔ %-8s  %.4f  (%s)", ticker, valor, data_ref)
+            else:
+                erros.append(ticker)
+                logger.warning("✘ %s não coletado", ticker)
 
-        # Salva as mudanças no PostgreSQL
+        for ticker, tipo, nome in ATIVOS_YFINANCE:
+            preco, variacao, data_ref = _extrair_ativo_yfinance(ticker)
+            if preco is not None:
+                _upsert(ticker, tipo, nome, preco, data_ref, variacao)
+                logger.info("✔ %-12s  R$ %.2f  var: %s%%", ticker, preco, variacao)
+            else:
+                erros.append(ticker)
+                logger.warning("✘ %s não coletado", ticker)
+
         db.session.commit()
-        print("💾 Dados persistidos com sucesso no PostgreSQL!")
+        logger.info("◼ ETL concluído — erros: %s", erros or "nenhum")
+        return {"ok": True, "erros": erros}
+
+
+# ── Funções públicas (compatibilidade com calculos.py) ────────────────────────
+
+def extrair_selic_bacen() -> float | None:
+    valor, _ = _extrair_indicador_bacen(11)
+    return valor
+
+
+def extrair_preco_yfinance(ticker: str) -> float | None:
+    preco, _, _ = _extrair_ativo_yfinance(ticker)
+    return preco

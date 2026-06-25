@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block title %}Painel de Impostos{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">📊 Painel de Impostos</h2>
+      <p class="text-muted mb-0">Simule descontos, compare investimentos e entenda quanto o governo leva.</p>
+    </div>
+    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary btn-sm">← Tela Inicial</a>
+  </div>
+
+  <!-- Abas -->
+  <ul class="nav nav-tabs mb-0" id="taxTabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#tab-salario">💼 Salário</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-investimento">📈 Investimento</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-comparar">⚖️ Comparar</a>
+    </li>
+  </ul>
+
+  <div class="tab-content border border-top-0 rounded-bottom p-4 bg-white shadow-sm">
+
+    <!-- ── ABA SALÁRIO ─────────────────────────────────────────────── -->
+    <div class="tab-pane fade show active" id="tab-salario">
+
+      {% if not salario %}
+      <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-circle me-2"></i>Nenhum salário cadastrado ainda.</span>
+        <a href="{{ url_for('salary.salary') }}" class="btn btn-sm btn-warning">
+          <i class="bi bi-plus-circle me-1"></i>Cadastrar Salário
+        </a>
+      </div>
+
+      {% else %}
+      {% set reg = salario.regime | lower %}
+
+      <!-- Banner informativo -->
+      <div class="alert alert-info d-flex justify-content-between align-items-center py-2 mb-4">
+        <span>
+          <i class="bi bi-person-check me-2"></i>
+          <strong>{{ salario.regime }}</strong>
+          {% if reg == 'mei' and salario.tipo_atividade %}<span class="text-muted ms-1">· {{ salario.tipo_atividade | capitalize }}</span>{% endif %}
+          {% if reg == 'pj' and salario.pro_labore %}<span class="text-muted ms-1">· pró-labore R$ {{ "%.2f"|format(salario.pro_labore) }}</span>{% endif %}
+          <span class="ms-2">— R$ {{ "%.2f"|format(salario.bruto) }}</span>
+        </span>
+        <a href="{{ url_for('salary.salary') }}" class="btn btn-sm btn-outline-primary ms-3 flex-shrink-0">
+          <i class="bi bi-pencil-square me-1"></i>Editar salário
+        </a>
+      </div>
+
+      {% if resultado_salario %}
+
+      <!-- Cards de resultado -->
+      <div class="row g-3 mb-4">
+        {% if reg == 'clt' %}
+          {% set r = resultado_salario %}
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Salário Bruto</div>
+            <div class="fw-bold fs-5">R$ {{ "%.2f"|format(r.bruto) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">INSS</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.inss) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">IRPF</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.irpf) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">FGTS*</div>
+            <div class="fw-bold fs-5 text-warning">R$ {{ "%.2f"|format(r.fgts) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-success bg-opacity-10 h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Salário Líquido</div>
+            <div class="fw-bold fs-4 text-success">R$ {{ "%.2f"|format(r.liquido) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Total Descontado</div>
+            <div class="fw-bold fs-5">{{ "%.1f"|format(r.percentual_desconto) }}%</div>
+          </div></div></div>
+
+          <!-- Barra de composição CLT -->
+          <div class="col-12 mt-2">
+            <p class="fw-semibold mb-2 small text-muted text-uppercase">Composição</p>
+            <div class="d-flex rounded overflow-hidden" style="height:20px;gap:2px">
+              <div style="width:{{ "%.1f"|format(r.liquido / r.bruto * 100) }}%;background:#0d6efd" title="Líquido"></div>
+              <div style="width:{{ "%.1f"|format(r.inss   / r.bruto * 100) }}%;background:#dc3545" title="INSS"></div>
+              <div style="width:{{ "%.1f"|format(r.irpf   / r.bruto * 100) }}%;background:#fd7e14" title="IRPF"></div>
+            </div>
+            <div class="d-flex gap-3 mt-2 small">
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#0d6efd"></span>Líquido</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#dc3545"></span>INSS</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#fd7e14"></span>IRPF</span>
+            </div>
+            <p class="small text-muted mt-2 mb-0">* FGTS é pago pelo empregador (não desconta do líquido), mas é seu direito.</p>
+          </div>
+
+        {% elif reg == 'pj' %}
+          {% set r = resultado_salario %}
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Faturamento</div>
+            <div class="fw-bold fs-5">R$ {{ "%.2f"|format(r.faturamento) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Simples Nacional</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.simples_mensal) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">INSS Pró-Labore</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.inss_pro_labore) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">IRPF Pró-Labore</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.irpf_pro_labore) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-success bg-opacity-10 h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Líquido Estimado</div>
+            <div class="fw-bold fs-4 text-success">R$ {{ "%.2f"|format(r.liquido_estimado) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Alíquota Simples</div>
+            <div class="fw-bold fs-5">{{ "%.2f"|format(r.aliquota_simples_efetiva) }}%</div>
+          </div></div></div>
+
+          <!-- Barra PJ -->
+          <div class="col-12 mt-2">
+            <p class="fw-semibold mb-2 small text-muted text-uppercase">Composição</p>
+            <div class="d-flex rounded overflow-hidden" style="height:20px;gap:2px">
+              <div style="width:{{ "%.1f"|format(r.liquido_estimado / r.faturamento * 100) }}%;background:#0d6efd" title="Líquido"></div>
+              <div style="width:{{ "%.1f"|format(r.simples_mensal   / r.faturamento * 100) }}%;background:#dc3545" title="Simples"></div>
+              <div style="width:{{ "%.1f"|format(r.inss_pro_labore  / r.faturamento * 100) }}%;background:#fd7e14" title="INSS PL"></div>
+              <div style="width:{{ "%.1f"|format(r.irpf_pro_labore  / r.faturamento * 100) }}%;background:#e83e8c" title="IRPF PL"></div>
+            </div>
+            <div class="d-flex gap-3 mt-2 small">
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#0d6efd"></span>Líquido</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#dc3545"></span>Simples</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#fd7e14"></span>INSS PL</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#e83e8c"></span>IRPF PL</span>
+            </div>
+          </div>
+
+        {% elif reg == 'mei' %}
+          {% set r = resultado_salario %}
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Faturamento</div>
+            <div class="fw-bold fs-5">R$ {{ "%.2f"|format(r.faturamento) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">DAS Mensal</div>
+            <div class="fw-bold fs-5 text-danger">-R$ {{ "%.2f"|format(r.das_mensal) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-success bg-opacity-10 h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Líquido Estimado</div>
+            <div class="fw-bold fs-4 text-success">R$ {{ "%.2f"|format(r.liquido_estimado) }}</div>
+          </div></div></div>
+          <div class="col-6 col-md-4 col-lg-3"><div class="card border-0 bg-light h-100"><div class="card-body p-3 text-center">
+            <div class="small text-muted mb-1">Teto Anual MEI</div>
+            <div class="fw-bold fs-5">R$ {{ "%.0f"|format(r.limite_anual) }}</div>
+          </div></div></div>
+
+          <!-- Barra MEI -->
+          <div class="col-12 mt-2">
+            <div class="d-flex rounded overflow-hidden" style="height:20px;gap:2px">
+              <div style="width:{{ "%.1f"|format(r.liquido_estimado / r.faturamento * 100) }}%;background:#0d6efd" title="Líquido"></div>
+              <div style="width:{{ "%.1f"|format(r.das_mensal       / r.faturamento * 100) }}%;background:#dc3545" title="DAS"></div>
+            </div>
+            <div class="d-flex gap-3 mt-2 small">
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#0d6efd"></span>Líquido</span>
+              <span><span class="d-inline-block me-1" style="width:12px;height:12px;border-radius:3px;background:#dc3545"></span>DAS</span>
+            </div>
+          </div>
+          {% if r.alerta %}
+          <div class="col-12"><div class="alert alert-warning small mb-0">{{ r.alerta }}</div></div>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      {% endif %}{# resultado_salario #}
+      {% endif %}{# salario #}
+    </div>
+
+    <!-- ── ABA INVESTIMENTO ────────────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-investimento">
+
+      <h6 class="fw-semibold mb-3">Tipo de investimento</h6>
+      <div class="btn-group mb-4" role="group">
+        <button type="button" class="btn btn-primary inv-btn" data-inv="renda_fixa">Renda Fixa</button>
+        <button type="button" class="btn btn-outline-primary inv-btn" data-inv="acoes">Ações / FII</button>
+        <button type="button" class="btn btn-outline-primary inv-btn" data-inv="dolar">Dólar</button>
+      </div>
+
+      <!-- Renda Fixa -->
+      <div id="form-rf" class="inv-form">
+        <div class="row g-3" style="max-width:500px">
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Rendimento Bruto (R$)</label>
+            <input type="number" id="rf-rend" class="form-control" placeholder="Ex: 500" min="0" step="0.01">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Prazo (dias)</label>
+            <input type="number" id="rf-dias" class="form-control" placeholder="Ex: 365" min="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div id="form-acoes" class="inv-form d-none">
+        <div class="row g-3" style="max-width:600px">
+          <div class="col-sm-4">
+            <label class="form-label fw-semibold">Lucro (R$)</label>
+            <input type="number" id="ac-lucro" class="form-control" placeholder="Ex: 2000" min="0" step="0.01">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label fw-semibold">Modalidade</label>
+            <select id="ac-tipo" class="form-select">
+              <option value="swing">Swing Trade (15%)</option>
+              <option value="day">Day Trade (20%)</option>
+              <option value="fii">FII (20%)</option>
+            </select>
+          </div>
+          <div class="col-sm-4" id="ac-venda-wrap">
+            <label class="form-label fw-semibold">
+              Total de Vendas no Mês (R$)
+              <span class="text-muted fw-normal" style="font-size:.8em">(isenção até R$ 20k)</span>
+            </label>
+            <input type="number" id="ac-venda" class="form-control" placeholder="Ex: 15000" min="0" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dólar -->
+      <div id="form-dolar" class="inv-form d-none">
+        <label class="form-label fw-semibold">Lucro em Reais (R$)</label>
+        <input type="number" id="dol-lucro" class="form-control" placeholder="Ex: 10000" min="0" step="0.01" style="max-width:300px">
+      </div>
+
+      <button class="btn btn-primary mt-3" onclick="calcularInvestimento()">Calcular IR</button>
+
+      <div id="resultado-inv" class="d-none mt-4">
+        <hr>
+        <h6 class="fw-semibold mb-3">Resultado</h6>
+        <div class="row g-3" id="cards-inv"></div>
+        <div id="alerta-inv" class="alert alert-success mt-3 d-none small"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA COMPARAR ────────────────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-comparar">
+
+      <h6 class="fw-semibold mb-3">Comparador de investimentos</h6>
+      <div class="row g-3 mb-3" style="max-width:600px">
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Valor (R$)</label>
+          <input type="number" id="cmp-valor" class="form-control" value="10000" min="0" step="100">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">Prazo (dias)</label>
+          <input type="number" id="cmp-prazo" class="form-control" value="365" min="1">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-semibold">CDI anual (%)</label>
+          <input type="number" id="cmp-cdi" class="form-control" value="10.65" min="0" step="0.01">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="compararInvestimentos()">Comparar</button>
+
+      <div id="resultado-cmp" class="d-none mt-4">
+        <hr>
+        <div id="tabela-cmp"></div>
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const fmt = v => "R$ " + Number(v).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+const pct = v => Number(v).toFixed(1) + "%";
+
+
+document.querySelectorAll(".inv-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".inv-btn").forEach(b => {
+      b.classList.replace("btn-primary", "btn-outline-primary");
+    });
+    btn.classList.replace("btn-outline-primary", "btn-primary");
+    document.querySelectorAll(".inv-form").forEach(f => f.classList.add("d-none"));
+    const map = {renda_fixa:"rf", acoes:"acoes", dolar:"dolar"};
+    document.getElementById("form-" + map[btn.dataset.inv]).classList.remove("d-none");
+    document.getElementById("resultado-inv").classList.add("d-none");
+  });
+});
+
+document.getElementById("ac-tipo").addEventListener("change", function() {
+  document.getElementById("ac-venda-wrap").style.display = this.value === "swing" ? "" : "none";
+});
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function card(label, valor, cor="secondary") {
+  return `
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card border-0 bg-light h-100">
+        <div class="card-body p-3 text-center">
+          <div class="small text-muted mb-1">${label}</div>
+          <div class="fw-bold fs-5 text-${cor}">${valor}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBarra(segmentos, total) {
+  const barraEl  = document.getElementById("barra-salario");
+  const legEl    = document.getElementById("legenda-salario");
+  const cores    = ["#0d6efd","#dc3545","#fd7e14","#e83e8c"];
+  barraEl.innerHTML  = segmentos.map((s,i) =>
+    `<div style="width:${(s.valor/total*100).toFixed(1)}%;background:${cores[i]}" title="${s.label}: ${fmt(s.valor)}"></div>`
+  ).join("");
+  legEl.innerHTML = segmentos.map((s,i) =>
+    `<span class="d-flex align-items-center gap-1 small">
+       <span style="width:12px;height:12px;border-radius:3px;background:${cores[i]};display:inline-block"></span>
+       ${s.label}
+     </span>`
+  ).join("");
+}
+
+
+// ── Investimento ─────────────────────────────────────────────────────────────
+async function calcularInvestimento() {
+  const tipo = document.querySelector(".inv-btn.btn-primary").dataset.inv;
+  let body = { tipo };
+  if (tipo === "renda_fixa") {
+    body.rendimento = +document.getElementById("rf-rend").value;
+    body.dias       = +document.getElementById("rf-dias").value;
+  }
+  if (tipo === "acoes") {
+    body.lucro      = +document.getElementById("ac-lucro").value;
+    body.modalidade = document.getElementById("ac-tipo").value;
+    const venda = document.getElementById("ac-venda").value;
+    if (body.modalidade === "swing" && venda !== "") body.valor_venda_mensal = +venda;
+  }
+  if (tipo === "dolar") {
+    body.lucro_reais = +document.getElementById("dol-lucro").value;
+  }
+
+  const res = await fetch("/impostos/api/investimento", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+  });
+  const d = await res.json();
+  if (d.erro) { alert(d.erro); return; }
+
+  const cardsEl  = document.getElementById("cards-inv");
+  const alertInv = document.getElementById("alerta-inv");
+  alertInv.classList.add("d-none");
+
+  if (tipo === "renda_fixa") {
+    cardsEl.innerHTML =
+      card("Rendimento Bruto",    fmt(d.rendimento_bruto)) +
+      card("IOF",                 fmt(d.iof || 0),         "warning") +
+      card("Alíquota IR",         pct(d.aliquota),         "secondary") +
+      card("IR a Pagar",          fmt(d.ir),               "danger") +
+      card("Rendimento Líquido",  fmt(d.rendimento_liquido),"success");
+  } else {
+    cardsEl.innerHTML =
+      card("Lucro Bruto",   fmt(d.lucro)) +
+      card("Alíquota IR",   pct(d.aliquota),    "secondary") +
+      card("IR a Pagar",    fmt(d.ir),           "danger") +
+      card("Lucro Líquido", fmt(d.lucro_liquido),"success");
+    if (d.isento) {
+      alertInv.textContent = "✅ Isento de IR — vendas abaixo de R$ 20.000 no mês (swing trade).";
+      alertInv.classList.remove("d-none");
+    }
+  }
+
+  document.getElementById("resultado-inv").classList.remove("d-none");
+}
+
+// ── Comparar ─────────────────────────────────────────────────────────────────
+async function compararInvestimentos() {
+  const body = {
+    valor:      +document.getElementById("cmp-valor").value,
+    prazo_dias: +document.getElementById("cmp-prazo").value,
+    cdi_anual:  +document.getElementById("cmp-cdi").value / 100,
+  };
+
+  const res = await fetch("/impostos/api/comparar", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+  });
+  const d = await res.json();
+  if (!Array.isArray(d)) { alert("Erro ao comparar."); return; }
+
+  const rows = d.map((inv, i) => `
+    <tr class="${i===0 ? "table-success fw-bold" : ""}">
+      <td>${i===0 ? "🥇 " : ""}${inv.nome}</td>
+      <td>${inv.tipo}</td>
+      <td>${fmt(inv.rendimento_bruto)}</td>
+      <td class="text-danger">${fmt(inv.ir)}</td>
+      <td class="${i===0?"text-success":""}">${fmt(inv.rendimento_liquido)}</td>
+      <td>
+        <span class="badge ${inv.isento_ir ? "bg-success" : "bg-danger"}">
+          ${inv.isento_ir ? "Isento" : "Com IR"}
+        </span>
+      </td>
+    </tr>`).join("");
+
+  document.getElementById("tabela-cmp").innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Investimento</th><th>Tipo</th>
+            <th>Rend. Bruto</th><th>IR</th>
+            <th>Rend. Líquido</th><th>IR?</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p class="small text-muted mt-1">* O melhor rendimento líquido está destacado em verde.</p>`;
+
+  document.getElementById("resultado-cmp").classList.remove("d-none");
+}
+</script>
+{% endblock %}

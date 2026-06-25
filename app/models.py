@@ -29,16 +29,19 @@ class Salary(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    bruto = db.Column(db.Float, nullable=False)
+    regime = db.Column(db.String(10), nullable=False, default='CLT')  # CLT, PJ, MEI
+    bruto = db.Column(db.Float, nullable=False)   # salário bruto (CLT) ou faturamento (PJ/MEI)
     liquido = db.Column(db.Float, nullable=False)
     inss = db.Column(db.Float)
     irrf = db.Column(db.Float)
     fgts = db.Column(db.Float)
+    pro_labore = db.Column(db.Float)              # PJ: valor do pró-labore
+    tipo_atividade = db.Column(db.String(20))     # MEI: comercio | servicos | ambos
     data_referencia = db.Column(db.Date, default=datetime.utcnow)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Salary bruto={self.bruto} liquido={self.liquido}>'
+        return f'<Salary {self.regime} bruto={self.bruto} liquido={self.liquido}>'
 
 
 class Income(db.Model):
@@ -129,6 +132,30 @@ class MarketData(db.Model):
 
     def __repr__(self):
         return f'<MarketData {self.ticker}: {self.valor} em {self.data_referencia}>'
+
+
+# --- CARTEIRA DE INVESTIMENTOS ---
+
+class PortfolioItem(db.Model):
+    """Posição individual na carteira do usuário."""
+    __tablename__ = 'portfolio_items'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    tipo            = db.Column(db.String(20), nullable=False)   # cdb | lci | tesouro_selic | tesouro_ipca | poupanca | acoes | fii
+    nome            = db.Column(db.String(100))                  # apelido livre
+    valor_investido = db.Column(db.Float, nullable=False)
+    data_entrada    = db.Column(db.Date, nullable=False)
+    # Renda fixa
+    pct_cdi         = db.Column(db.Float)   # ex: 1.10 = 110% CDI
+    spread_ipca     = db.Column(db.Float)   # spread anual p/ Tesouro IPCA+ (ex: 0.06)
+    # Renda variável
+    ticker          = db.Column(db.String(20))   # ex: PETR4.SA
+    preco_entrada   = db.Column(db.Float)        # preço por unidade na compra
+    criado_em       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<PortfolioItem {self.tipo} {self.nome} R${self.valor_investido}>'
 
 
 # --- MÓDULO DE IMPOSTOS ---

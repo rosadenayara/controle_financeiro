@@ -39,14 +39,22 @@ def register():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        user = User.query.filter_by(email=request.form["email"]).first()
+    erro = None
+    email_digitado = ""
 
-        if user and check_password_hash(user.password, request.form["password"]):
+    if request.method == "POST":
+        email_digitado = request.form.get("email", "").strip()
+        user = User.query.filter_by(email=email_digitado).first()
+
+        if not user:
+            erro = "not_found"
+        elif not check_password_hash(user.password, request.form.get("password", "")):
+            erro = "wrong_password"
+        else:
             login_user(user)
             return redirect(url_for("dashboard.home"))
 
-    return render_template("auth/login.html")
+    return render_template("auth/login.html", erro=erro, email_digitado=email_digitado)
 
 
 @auth_bp.route("/logout")
