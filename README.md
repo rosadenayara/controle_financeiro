@@ -262,7 +262,3 @@ Este projeto foi desenvolvido com foco em:
 ### Metas
 
 <img width="1748" height="796" alt="metas" src="https://github.com/user-attachments/assets/b781c121-f5a4-4c72-a938-78e98c4070d3" />
-
-
-
-  
