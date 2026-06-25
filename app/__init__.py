@@ -15,6 +15,10 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
+    with app.app_context():
+        db.create_all()
+
+
     # Blueprints
     from app.auth.routes import auth_bp
     from app.salary.routes import salary_bp
