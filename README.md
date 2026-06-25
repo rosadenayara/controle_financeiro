@@ -264,48 +264,5 @@ Este projeto foi desenvolvido com foco em:
 <img width="1748" height="796" alt="metas" src="https://github.com/user-attachments/assets/b781c121-f5a4-4c72-a938-78e98c4070d3" />
 
 
-### 🛠️ Tecnologias Utilizadas
-**Backend**
-  - Flask
-  - SQLAlchemy
-  - Flask-Login
-    
-  **Frontend**
-  - Bootstrap 5
-  - Chart.js
-  - Bootstrap Icons
 
-**Banco de Dados**
-- SQLite
   
-**Deploy**
-- Render
-
-### 📊 Regras de Negócio
-
-**💰 Cálculo de Salário**
-- INSS progressivo por faixa salarial
-- IRRF conforme tabela oficial
-- Cálculo automático do líquido
-
-**📉 Score Financeiro**
-- Baseado na proporção de gastos vs renda
-- Penalizações por gastos excessivos e saldo negativo
-
-**🎯 Metas**
-- Cálculo automático de progresso (%)
-- Feedback visual de conclusão
-
-### Como Executar Localmente
-
-**Clone o repositório**
-- git clone https://github.com/SEU-USUARIO/controle-real.git
-
-**Acesse a pasta**
-- cd controle-real
-
-**Instale as dependências**
-- pip install -r requirements.txt
-
-**Execute o projeto**
-- python run.py
