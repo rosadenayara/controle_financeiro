@@ -2,6 +2,11 @@ from flask import Flask
 from app.extensions import db, migrate, login_manager
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    from app.models import User
+    return User.query.get(int(user_id))
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object("config.Config")
@@ -9,11 +14,6 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-
-    @login_manager.user_loader
-    def load_user(user_id):
-        from app.models import User
-        return User.query.get(int(user_id))
 
     # Blueprints
     from app.auth.routes import auth_bp
