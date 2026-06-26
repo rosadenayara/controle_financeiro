@@ -19,6 +19,7 @@
                 <h5 class="mb-0">{{ goal.nome }}</h5>
             </div>
             <div class="card-body">
+
                 <!-- Barra de Progresso -->
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -26,11 +27,10 @@
                         <span class="badge bg-primary">{{ progresso }}%</span>
                     </div>
                     <div class="progress" style="height: 12px;">
-                        <div class="progress-bar" role="progressbar
-                             style="width: {{ progresso }}%;
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ progresso }}%"
                              aria-valuenow="{{ progresso }}"
-                             aria-valuemin="0"
-                             aria-valuemax="100">
+                             aria-valuemin="0" aria-valuemax="100">
                         </div>
                     </div>
                 </div>
@@ -51,7 +51,8 @@
                     </div>
                 </div>
 
-                <form method="POST">
+                <!-- Formulário de edição -->
+                <form method="POST" id="form-editar">
                     <div class="mb-3">
                         <label for="valor_atual" class="form-label">Novo Valor Atual (R$)</label>
                         <input type="number" step="0.01" class="form-control form-control-lg"
@@ -61,24 +62,27 @@
                             Digite o valor que você já economizou para esta meta.
                         </div>
                     </div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>Atualizar Meta
-                        </button>
-
-                        <!-- Form de exclusão separado (inline) -->
-                        <form method="POST" class="m-0">
-                            <input type="hidden" name="delete" value="1">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta meta?');">
-                                <i class="bi bi-trash me-2"></i>Excluir Meta
-                            </button>
-                        </form>
-
-                        <a href="{{ url_for('salary.goals') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Voltar
-                        </a>
-                    </div>
                 </form>
+
+                <!-- Formulário de exclusão — completamente separado do form de edição -->
+                <form method="POST" id="form-excluir">
+                    <input type="hidden" name="delete" value="1">
+                </form>
+
+                <!-- Botões: cada um aponta para seu próprio form via atributo form="" -->
+                <div class="d-flex gap-2 align-items-center mt-2">
+                    <button type="submit" form="form-editar" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Atualizar Meta
+                    </button>
+                    <button type="submit" form="form-excluir" class="btn btn-danger"
+                            onclick="return confirm('Tem certeza que deseja excluir esta meta?')">
+                        <i class="bi bi-trash me-2"></i>Excluir Meta
+                    </button>
+                    <a href="{{ url_for('salary.goals') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Voltar
+                    </a>
+                </div>
+
             </div>
         </div>
     </div>
